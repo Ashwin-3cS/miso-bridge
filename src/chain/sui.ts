@@ -95,13 +95,21 @@ export function openSuiMinter(options: {
   key: Secret
   network: Network
   rpcUrl: string
+  /**
+   * Override the CCTP ids. A localnet deploy publishes its own packages, so
+   * tier 3b -- the only way to execute the real receive PTB off mainnet --
+   * needs this. Production passes nothing and gets the pinned ids.
+   */
+  config?: SuiCctpConfig
+  /** The SDK's network label, which is not our mainnet/testnet distinction. */
+  suiNetwork?: "mainnet" | "testnet" | "devnet" | "localnet"
 }): SuiMinter {
   const keypair = Ed25519Keypair.fromSecretKey(options.key.reveal())
   const client = new SuiGrpcClient({
-    network: options.network,
+    network: options.suiNetwork ?? options.network,
     baseUrl: options.rpcUrl,
   })
-  const config = suiCctpConfig(options.network)
+  const config = options.config ?? suiCctpConfig(options.network)
   const address = keypair.toSuiAddress()
 
   /**
