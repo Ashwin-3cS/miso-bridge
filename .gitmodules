@@ -1,0 +1,3 @@
+[submodule "vendor/cctp-forwarders"]
+	path = vendor/cctp-forwarders
+	url = https://github.com/misofm/cctp-forwarders.git
