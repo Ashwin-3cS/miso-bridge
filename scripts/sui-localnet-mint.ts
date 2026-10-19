@@ -154,7 +154,17 @@ async function main(): Promise<void> {
   if (configPath === undefined) throw new Error("set SUI_CCTP_CONFIG")
   if (databaseUrl === undefined) throw new Error("set DATABASE_URL")
 
-  const env = readEnvFile(configPath)
+  /**
+   * Two files: the deploy writes the Sui ids to test_config.v2.env, while the
+   * EVM remote it registered -- the token messenger and USDC address a message
+   * must name to be accepted -- stays in the repo's own .env.
+   */
+  const env = {
+    ...(process.env.SUI_CCTP_ENV === undefined
+      ? {}
+      : readEnvFile(process.env.SUI_CCTP_ENV)),
+    ...readEnvFile(configPath),
+  }
   const need = (key: string): string => {
     const value = env[key]
     if (value === undefined || value === "")
