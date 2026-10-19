@@ -12,8 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json",
-    "db:up": "docker compose up -d postgres",
-    "db:down": "docker compose down",
+    "db:up": "./scripts/dev-db.sh up",
+    "db:down": "./scripts/dev-db.sh down",
     "migrate": "bun run src/migrate.ts"
   },
   "dependencies": {
