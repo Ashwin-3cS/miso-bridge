@@ -1,0 +1,42 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: bridge
+          POSTGRES_PASSWORD: bridge
+          POSTGRES_DB: bridge
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U bridge -d bridge"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The forwarder modules and the captured Circle fixtures the tests
+          # replay live in the pinned submodule.
+          submodules: true
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - run: bun run format:check
+      - run: bun run lint
+      - run: bun run typecheck
+      # The journal, API, Iris and mint suites need Postgres; without
+      # DATABASE_URL they skip, which would hide them in CI.
+      - run: bun run test
+        env:
+          DATABASE_URL: postgres://bridge:bridge@localhost:5433/bridge
+      - run: bun run build
