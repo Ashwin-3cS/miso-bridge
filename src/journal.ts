@@ -704,16 +704,26 @@ export function openJournal(db: Db, network: Network) {
     },
 
     /**
-     * The nonce reads used on Sui and we did not submit it. Minting is
-     * permissionless, so anyone may have delivered the transfer; it is
-     * delivered either way. No mints row is written, because mints records this
-     * service's own submissions.
+     * The nonce reads used on Sui without a confirmed submission of ours.
+     * Minting is permissionless, so anyone may have delivered the transfer,
+     * and a submission of ours whose outcome we never learned may equally
+     * have landed. The nonce is the oracle either way: used means delivered.
+     *
+     * `by` records which of the two it was, because they are operationally
+     * different -- a transfer someone else relayed is ordinary, one of ours
+     * with an unknown outcome is worth looking at. No mints row is written
+     * here: mints records submissions this service saw complete.
      */
-    async markDeliveredElsewhere(burnId: string, nonce: string): Promise<void> {
+    async markDeliveredElsewhere(
+      burnId: string,
+      nonce: string,
+      by:
+        "another caller" | "an uncertain submission of ours" = "another caller"
+    ): Promise<void> {
       await db.transaction((tx) =>
         move(tx, "burn", "burns", "id", burnId, "minted", {
           nonce: lower(nonce, 32),
-          deliveredBy: "another caller",
+          deliveredBy: by,
         })
       )
     },
