@@ -7,7 +7,7 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["node"],
+    "types": ["node", "bun"],
     "lib": ["ES2022", "DOM"],
     "paths": {
       "@misofm/cctp-forwarders/*": ["./vendor/cctp-forwarders/dist/*"]

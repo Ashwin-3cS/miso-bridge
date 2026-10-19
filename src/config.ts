@@ -83,6 +83,9 @@ const schema = z.object({
   /** Cranks per address per day, so a griefer cannot drain the gas wallet. */
   CRANK_BUDGET_PER_DEPOSIT: z.coerce.number().int().positive().default(24),
 
+  /** How long after issuing an address the watcher polls it on the fast loop. */
+  HOT_WINDOW_SECONDS: seconds.default(86_400),
+
   CRANK_DEADLINE_SECONDS: seconds.default(600),
   ATTEST_DEADLINE_SECONDS: seconds.default(1800),
   MINT_DEADLINE_SECONDS: seconds.default(1800),
