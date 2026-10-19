@@ -76,6 +76,17 @@ export function depositAddress(network: Network, suiRecipient: string): string {
   return forwarderAddress(suiRecipient.toLowerCase())
 }
 
+/**
+ * The native USDC a forwarder burns on a chain. Circle's minter names it at
+ * deployment, so it is a property of the build, not a configurable.
+ */
+export function usdcFor(network: Network, chain: EvmChain): string {
+  const build = forwarderBuild(network)
+  if (!build.chains.includes(chain))
+    throw new Error(`${chain} is not a chain of the ${network} build`)
+  return EVM_CHAINS[chain].usdc
+}
+
 /** The chains a recipient's address accepts under this build. */
 export function chainsFor(network: Network): readonly EvmChain[] {
   return forwarderBuild(network).chains
