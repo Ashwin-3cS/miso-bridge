@@ -10,3 +10,6 @@ coverage/
 *.key
 *.pem
 journal/
+
+# Built from the pinned submodule by `bun run vendor:build`.
+vendor/cctp-forwarders/dist/

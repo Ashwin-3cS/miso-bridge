@@ -10,7 +10,7 @@
     "types": ["node"],
     "lib": ["ES2022", "DOM"],
     "paths": {
-      "@misofm/cctp-forwarders/*": ["./vendor/cctp-forwarders/src/*"]
+      "@misofm/cctp-forwarders/*": ["./vendor/cctp-forwarders/dist/*"]
     }
   },
   "include": ["src/**/*.ts", "test/**/*.ts"]

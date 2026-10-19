@@ -6,15 +6,21 @@
   "description": "The middleman service for Miso's CCTP V2 forwarders: issues deposit addresses, cranks forwarder burns, relays Circle attestations and mints native USDC on Sui.",
   "packageManager": "bun@1.4.2",
   "scripts": {
+    "vendor:build": "tsc -p vendor/cctp-forwarders/tsconfig.build.json",
+    "prelint": "bun run vendor:build",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "pretypecheck": "bun run vendor:build",
     "typecheck": "tsc --noEmit",
+    "pretest": "bun run vendor:build",
     "test": "vitest run",
+    "prebuild": "bun run vendor:build",
     "build": "tsc -p tsconfig.build.json",
     "db:up": "./scripts/dev-db.sh up",
     "db:down": "./scripts/dev-db.sh down",
-    "migrate": "bun run src/migrate.ts"
+    "migrate": "bun run src/migrate.ts",
+    "test:db": "./scripts/dev-db.sh up && DATABASE_URL=postgres://bridge:bridge@localhost:5433/bridge vitest run"
   },
   "dependencies": {
     "@mysten/sui": "2.30.0",

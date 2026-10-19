@@ -8,7 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@misofm/cctp-forwarders": new URL(
-        "./vendor/cctp-forwarders/src",
+        "./vendor/cctp-forwarders/dist",
         import.meta.url
       ).pathname,
     },
