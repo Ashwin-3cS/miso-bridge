@@ -1,3 +1,4 @@
+import type { EvmChain } from "@misofm/cctp-forwarders/evm-forwarder"
 import type { Hex } from "viem"
 import type { EvmRpc } from "../chain/evm.js"
 import { classifyCrankRevert } from "../chain/reverts.js"
@@ -99,4 +100,29 @@ export async function crankOnce(
     deployed,
     gasUsed: sent.gasUsed,
   }
+}
+
+/**
+ * One pass over every deposit the crank should look at on a chain.
+ *
+ * Each is claimed under its own lock, so several crank processes can run
+ * against one chain without two of them paying gas for one address.
+ */
+export async function crankPendingOnce(
+  deps: CrankDeps & {
+    chain: EvmChain
+    limit?: number
+    /** How long a deposit waiting on Circle rests before another attempt. */
+    retryWaitingAfterSeconds?: number
+  }
+): Promise<CrankOutcome[]> {
+  const deposits = await deps.journal.crankableDeposits({
+    chain: deps.chain,
+    limit: deps.limit ?? 20,
+    retryWaitingAfterSeconds: deps.retryWaitingAfterSeconds ?? 300,
+  })
+  const outcomes: CrankOutcome[] = []
+  for (const deposit of deposits)
+    outcomes.push(await crankOnce(deps, deposit.id))
+  return outcomes
 }
