@@ -98,6 +98,23 @@ const schema = z.object({
 
 export type Config = Readonly<z.infer<typeof schema>>
 
+/** Just the database, for jobs that only migrate or inspect it. */
+export type DatabaseConfig = Readonly<{ DATABASE_URL: Secret }>
+
+/**
+ * The database URL alone. A migration needs no RPC endpoint and no signing
+ * key, and asking it for them would turn a schema change into a deployment
+ * that can fail for unrelated reasons.
+ */
+export function loadDatabaseConfig(
+  env: NodeJS.ProcessEnv = process.env
+): DatabaseConfig {
+  const result = z.object({ DATABASE_URL: secret }).safeParse(env)
+  if (!result.success)
+    throw new Error("invalid configuration:\n  DATABASE_URL: required")
+  return Object.freeze(result.data)
+}
+
 /**
  * Parses and freezes the environment, throwing one error that names every
  * problem at once. Never logs a value: a rejected secret would otherwise be
