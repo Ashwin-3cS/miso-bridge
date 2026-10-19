@@ -9,9 +9,8 @@
     "noEmit": true,
     "types": ["node"],
     "lib": ["ES2022", "DOM"],
-    "baseUrl": ".",
     "paths": {
-      "@misofm/cctp-forwarders/*": ["vendor/cctp-forwarders/src/*"]
+      "@misofm/cctp-forwarders/*": ["./vendor/cctp-forwarders/src/*"]
     }
   },
   "include": ["src/**/*.ts", "test/**/*.ts"]
