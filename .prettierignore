@@ -1,0 +1,6 @@
+bun.lock
+dist
+node_modules
+
+# Pinned sibling repo; formatted in its own CI.
+vendor

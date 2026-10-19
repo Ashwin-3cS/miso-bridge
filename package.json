@@ -1,0 +1,35 @@
+{
+  "name": "@misofm/bridge",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The middleman service for Miso's CCTP V2 forwarders: issues deposit addresses, cranks forwarder burns, relays Circle attestations and mints native USDC on Sui.",
+  "packageManager": "bun@1.4.2",
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "migrate": "bun run src/migrate.ts"
+  },
+  "dependencies": {
+    "@mysten/sui": "2.30.0",
+    "@noble/hashes": "1.8.0",
+    "pg": "8.23.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.4.1",
+    "@types/pg": "8.23.1",
+    "@typescript-eslint/eslint-plugin": "8.70.0",
+    "@typescript-eslint/parser": "8.70.0",
+    "eslint": "10.10.0",
+    "prettier": "3.9.6",
+    "typescript": "6.0.2",
+    "vitest": "4.1.11"
+  }
+}
