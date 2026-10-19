@@ -83,6 +83,14 @@ const schema = z.object({
   /** Cranks per address per day, so a griefer cannot drain the gas wallet. */
   CRANK_BUDGET_PER_DEPOSIT: z.coerce.number().int().positive().default(24),
 
+  /**
+   * Blocks per eth_getLogs call during discovery. Providers cap this -- the
+   * public Avalanche endpoint at 100 -- and the cap is per provider, not per
+   * chain, so it is configuration rather than a constant.
+   */
+  DISCOVER_WINDOW_BLOCKS: z.coerce.bigint().positive().prefault("100"),
+  DISCOVER_MAX_WINDOWS: z.coerce.number().int().positive().default(20),
+
   /** How long after issuing an address the watcher polls it on the fast loop. */
   HOT_WINDOW_SECONDS: seconds.default(86_400),
 
