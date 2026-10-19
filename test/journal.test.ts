@@ -167,7 +167,7 @@ describe.skipIf(!url)("journal", () => {
         depositId,
         chain: "avalanche",
         txHash: TX,
-        logIndex: 0,
+        burnIndex: 0,
         blockNumber: 1_000n,
         amount: 7_000_000n,
       })
@@ -256,7 +256,7 @@ describe.skipIf(!url)("journal", () => {
         depositId: deposit.id,
         chain: "avalanche",
         txHash: TX,
-        logIndex: 0,
+        burnIndex: 0,
         blockNumber: 1_000n,
         amount: 7_000_000n,
       })
@@ -411,7 +411,7 @@ describe.skipIf(!url)("journal", () => {
         depositId: deposit.id,
         chain: "avalanche",
         txHash: TX,
-        logIndex: 0,
+        burnIndex: 0,
         blockNumber: 1n,
         amount: 7_000_000n,
       })

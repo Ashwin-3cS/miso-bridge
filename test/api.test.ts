@@ -113,7 +113,7 @@ describe("publicPhase", () => {
     network: "mainnet",
     chain: "avalanche",
     txHash: "0x" + "2".repeat(64),
-    logIndex: 0,
+    burnIndex: 0,
     blockNumber: 1n,
     amount: 1_000_000n,
     status,

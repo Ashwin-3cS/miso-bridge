@@ -41,7 +41,7 @@ export type BurnRow = {
   network: Network
   chain: EvmChain
   txHash: string
-  logIndex: number
+  burnIndex: number
   blockNumber: bigint
   amount: bigint
   status: BurnStatus
@@ -88,7 +88,7 @@ const burnRow = (row: Row): BurnRow => ({
   network: row.network as Network,
   chain: row.chain as EvmChain,
   txHash: String(row.tx_hash),
-  logIndex: Number(row.log_index),
+  burnIndex: Number(row.burn_index),
   blockNumber: big(row.block_number as string),
   amount: big(row.amount as string),
   status: row.status as BurnStatus,
@@ -164,7 +164,7 @@ export function openJournal(db: Db, network: Network) {
     id, sui_address, network, chain, forwarder_address, status, waiting_reason,
     last_balance, last_balance_at, hot_until, crank_attempts`
   const burns = `
-    id, deposit_id, network, chain, tx_hash, log_index, block_number, amount,
+    id, deposit_id, network, chain, tx_hash, burn_index, block_number, amount,
     status, nonce, message, attestation, max_fee, fee_executed, problem, delay_reason`
 
   return {
@@ -271,6 +271,27 @@ export function openJournal(db: Db, network: Network) {
         `select ${deposits} from deposits
          where sui_address = $1 and network = $2 order by chain`,
         [lower(suiAddress, 32), network]
+      )
+      return rows.map(depositRow)
+    },
+
+    /**
+     * Deposits a crank was submitted for and whose burn has not been found
+     * yet. Discovery scans these, rather than every address ever issued: the
+     * reviewed discovery call filters by one depositor at a time, so the hot
+     * path has to stay small. The slow sweep over everything belongs to the
+     * reconciler.
+     */
+    async depositsAwaitingDiscovery(args: {
+      chain: EvmChain
+      limit: number
+    }): Promise<DepositRow[]> {
+      const rows = await db.query<Row>(
+        `select ${deposits} from deposits
+         where network = $1 and chain = $2 and status = 'cranking'
+         order by last_crank_at asc nulls first
+         limit $3`,
+        [network, args.chain, args.limit]
       )
       return rows.map(depositRow)
     },
@@ -448,20 +469,20 @@ export function openJournal(db: Db, network: Network) {
       depositId: string
       chain: EvmChain
       txHash: string
-      logIndex: number
+      burnIndex: number
       blockNumber: bigint
       amount: bigint
     }): Promise<{ burn: BurnRow; isNew: boolean }> {
       return db.transaction(async (tx) => {
         const existing = await tx.maybeOne<Row>(
-          `select ${burns} from burns where chain = $1 and tx_hash = $2 and log_index = $3`,
-          [args.chain, lower(args.txHash, 32), args.logIndex]
+          `select ${burns} from burns where chain = $1 and tx_hash = $2 and burn_index = $3`,
+          [args.chain, lower(args.txHash, 32), args.burnIndex]
         )
         if (existing !== null) return { burn: burnRow(existing), isNew: false }
 
         const row = await tx.one<Row>(
           `insert into burns
-             (deposit_id, network, chain, tx_hash, log_index, block_number, amount)
+             (deposit_id, network, chain, tx_hash, burn_index, block_number, amount)
            values ($1, $2, $3, $4, $5, $6, $7)
            returning ${burns}`,
           [
@@ -469,7 +490,7 @@ export function openJournal(db: Db, network: Network) {
             network,
             args.chain,
             lower(args.txHash, 32),
-            args.logIndex,
+            args.burnIndex,
             args.blockNumber.toString(),
             args.amount.toString(),
           ]
@@ -482,7 +503,7 @@ export function openJournal(db: Db, network: Network) {
             burn.id,
             JSON.stringify({
               txHash: burn.txHash,
-              logIndex: burn.logIndex,
+              burnIndex: burn.burnIndex,
               amount: burn.amount.toString(),
               blockNumber: burn.blockNumber.toString(),
             }),
