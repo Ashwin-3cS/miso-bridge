@@ -80,9 +80,28 @@ function wrap(run: Queryable["query"]): Queryable {
   }
 }
 
-export function openDb(config: Pick<Config, "DATABASE_URL">): Db {
+export type DbOptions = {
+  /**
+   * A schema to resolve unqualified names in, for every connection in the
+   * pool. Test files use one each so they can truncate freely in parallel.
+   */
+  schema?: string
+}
+
+export function openDb(
+  config: Pick<Config, "DATABASE_URL">,
+  options: DbOptions = {}
+): Db {
+  if (
+    options.schema !== undefined &&
+    !/^[a-z_][a-z0-9_]*$/.test(options.schema)
+  )
+    throw new Error(`unsafe schema name: ${options.schema}`)
   const pool = new Pool({
     connectionString: config.DATABASE_URL.reveal(),
+    ...(options.schema === undefined
+      ? {}
+      : { options: `-c search_path=${options.schema}` }),
     max: 10,
     // A worker that cannot get a connection should fail and retry, not queue.
     connectionTimeoutMillis: 5_000,

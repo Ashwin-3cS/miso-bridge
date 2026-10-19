@@ -1,8 +1,7 @@
 import { beforeAll, afterAll, beforeEach, describe, expect, it } from "vitest"
-import { Secret } from "../src/config.js"
-import { openDb, type Db } from "../src/db.js"
+import { type Db } from "../src/db.js"
 import { openJournal, type Journal } from "../src/journal.js"
-import { migrate, readMigrations } from "../src/migrate.js"
+import { openIsolatedDb, truncateAll } from "./helpers/db.js"
 
 /**
  * The journal against a real Postgres. The constraints and triggers it relies
@@ -25,8 +24,7 @@ describe.skipIf(!url)("journal", () => {
   let journal: Journal
 
   beforeAll(async () => {
-    db = openDb({ DATABASE_URL: new Secret(url as string) })
-    await migrate(db, await readMigrations(), () => {})
+    db = await openIsolatedDb(url as string, "journal_test")
     journal = openJournal(db, "testnet")
   })
 
@@ -35,10 +33,7 @@ describe.skipIf(!url)("journal", () => {
   })
 
   beforeEach(async () => {
-    await db.query(
-      `truncate transitions, mints, burns, deposits, recipients, cursors, alerts
-       restart identity cascade`
-    )
+    await truncateAll(db)
     await journal.bindRecipient({ suiAddress: RECIPIENT, userRef: "user-1" })
   })
 
