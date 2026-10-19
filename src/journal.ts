@@ -256,6 +256,60 @@ export function openJournal(db: Db, network: Network) {
       return row === null ? null : depositRow(row)
     },
 
+    async depositById(id: string): Promise<DepositRow | null> {
+      if (!/^\d+$/.test(id)) return null
+      const row = await db.maybeOne<Row>(
+        `select ${deposits} from deposits where id = $1 and network = $2`,
+        [id, network]
+      )
+      return row === null ? null : depositRow(row)
+    },
+
+    /** Every deposit address issued to a recipient, one per chain. */
+    async depositsFor(suiAddress: string): Promise<DepositRow[]> {
+      const rows = await db.query<Row>(
+        `select ${deposits} from deposits
+         where sui_address = $1 and network = $2 order by chain`,
+        [lower(suiAddress, 32), network]
+      )
+      return rows.map(depositRow)
+    },
+
+    async burnsForDeposit(depositId: string): Promise<BurnRow[]> {
+      const rows = await db.query<Row>(
+        `select ${burns} from burns where deposit_id = $1 order by id`,
+        [depositId]
+      )
+      return rows.map(burnRow)
+    },
+
+    async mintByNonce(nonce: string): Promise<MintRow | null> {
+      const row = await db.maybeOne<Row>(
+        `select nonce, burn_id, status, sui_tx_digest, attempts, last_error
+         from mints where nonce = $1`,
+        [lower(nonce, 32)]
+      )
+      return row === null ? null : mintRow(row)
+    },
+
+    /** Row counts by status, for /metrics. */
+    async counts(): Promise<{
+      deposits: Record<string, number>
+      burns: Record<string, number>
+    }> {
+      const tally = async (table: string) =>
+        Object.fromEntries(
+          (
+            await db.query<{ status: string; n: string }>(
+              `select status, count(*) as n from ${table}
+               where network = $1 group by status`,
+              [network]
+            )
+          ).map((row) => [row.status, Number(row.n)])
+        )
+      return { deposits: await tally("deposits"), burns: await tally("burns") }
+    },
+
     /** The watcher's fast loop: addresses worth polling right now. */
     async hotDeposits(args: {
       chain: EvmChain
