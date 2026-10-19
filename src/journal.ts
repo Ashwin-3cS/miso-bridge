@@ -296,6 +296,65 @@ export function openJournal(db: Db, network: Network) {
       return rows.map(depositRow)
     },
 
+    /**
+     * Deposits stuck in a status past a deadline. The clock is the last thing
+     * that happened to the row, not when it was issued: an address funded
+     * again after a successful transfer is not stalled.
+     */
+    async stalledDeposits(args: {
+      status: DepositStatus
+      olderThanSeconds: number
+      limit: number
+    }): Promise<DepositRow[]> {
+      const rows = await db.query<Row>(
+        `select ${deposits} from deposits
+         where network = $1 and status = $2
+           and coalesce(last_crank_at, last_balance_at, issued_at)
+               < now() - make_interval(secs => $3)
+         order by coalesce(last_crank_at, last_balance_at, issued_at) asc
+         limit $4`,
+        [network, args.status, args.olderThanSeconds, args.limit]
+      )
+      return rows.map(depositRow)
+    },
+
+    /** Burns stuck in any of these statuses past a deadline. */
+    async stalledBurns(args: {
+      statuses: readonly BurnStatus[]
+      olderThanSeconds: number
+      limit: number
+    }): Promise<BurnRow[]> {
+      const rows = await db.query<Row>(
+        `select ${burns} from burns
+         where network = $1 and status = any($2::text[])
+           and coalesce(attested_at, discovered_at)
+               < now() - make_interval(secs => $3)
+         order by coalesce(attested_at, discovered_at) asc
+         limit $4`,
+        [network, [...args.statuses], args.olderThanSeconds, args.limit]
+      )
+      return rows.map(burnRow)
+    },
+
+    /**
+     * Every deposit address ever issued on a chain, in pages. This is the
+     * slow sweep behind "alert on any balance at any issued address": the
+     * watcher's hot set deliberately forgets addresses, and this does not.
+     */
+    async allDeposits(args: {
+      chain: EvmChain
+      afterId: string
+      limit: number
+    }): Promise<DepositRow[]> {
+      const rows = await db.query<Row>(
+        `select ${deposits} from deposits
+         where network = $1 and chain = $2 and id > $3
+         order by id asc limit $4`,
+        [network, args.chain, args.afterId, args.limit]
+      )
+      return rows.map(depositRow)
+    },
+
     async burnsForDeposit(depositId: string): Promise<BurnRow[]> {
       const rows = await db.query<Row>(
         `select ${burns} from burns where deposit_id = $1 order by id`,
@@ -389,6 +448,35 @@ export function openJournal(db: Db, network: Network) {
         })
         return to
       })
+    },
+
+    /**
+     * Deposits the crank should look at: funded and not yet burned, plus ones
+     * waiting on a Circle condition whose retry is due. A waiting deposit is
+     * retried on a slower clock because the condition is Circle's to lift and
+     * each attempt costs a simulation.
+     */
+    async crankableDeposits(args: {
+      chain: EvmChain
+      limit: number
+      retryWaitingAfterSeconds: number
+    }): Promise<DepositRow[]> {
+      const rows = await db.query<Row>(
+        `select ${deposits} from deposits
+         where network = $1 and chain = $2
+           and (
+             status = 'fundable'
+             or (
+               status = 'waiting'
+               and coalesce(last_crank_at, issued_at)
+                   < now() - make_interval(secs => $3)
+             )
+           )
+         order by last_balance_at asc nulls first
+         limit $4`,
+        [network, args.chain, args.retryWaitingAfterSeconds, args.limit]
+      )
+      return rows.map(depositRow)
     },
 
     /**
